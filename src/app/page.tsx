@@ -1,5 +1,8 @@
 "use client";
+import { client } from "@/lib/client";
+import { useMutation } from "@tanstack/react-query";
 import { nanoid } from "nanoid";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const ANIMALS = ["wolf", "tiger", "lion"];
@@ -11,6 +14,7 @@ const generateUsername = (): string => {
 
 export default function Home() {
   const [username, setUsername] = useState<string>("");
+  const router = useRouter();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -24,9 +28,27 @@ export default function Home() {
     setUsername(generated);
   }, []);
 
+  const { mutate: createRoom } = useMutation({
+    mutationFn: async () => {
+      const res = await client.room.create.post();
+      if (res?.status === 200 && res.data?.roomId) {
+        router.push(`/room/${res.data.roomId}`);
+      }
+      return res;
+    },
+  });
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full md:w-md space-y-8">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight text-green-500">
+            anon_chat
+          </h1>
+          <p className="text-zinc-500">
+            A dark chamber for self-erasing conversations
+          </p>
+        </div>
         <div className="border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-md">
           <div className="space-y-5">
             <div className="space-y-2">
@@ -40,14 +62,8 @@ export default function Home() {
               </div>
             </div>
             <button
+              onClick={() => createRoom()}
               className="w-full bg-zinc-100 text-black p-3 text-sm font-bold hover:bg-zinc-50 hover:text-black transition-colors mt-2 cursor-pointer disabled:opacity-50"
-              onClick={() => {
-                const newName = generateUsername();
-                if (typeof window !== "undefined") {
-                  window.localStorage.setItem(STORAGE_KEY, newName);
-                }
-                setUsername(newName);
-              }}
             >
               CREATE A SECURE ROOM
             </button>
